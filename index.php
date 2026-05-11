@@ -2,7 +2,7 @@
 /**
  * @package Lanzou
  * @author Filmy,hanximeng
- * @version 1.3.104
+ * @version 1.3.105
  * @Date 2026-05-11
  * @link https://hanximeng.com
  */
@@ -60,20 +60,26 @@ if(!empty($webpage)){
     $softInfo = MloocCurlGet($url.$webpage);
 }
 //带密码的链接的处理
-if(strstr($softInfo, "function down_p(){") != false  && empty($webpage)) {
+if(strpos($softInfo, "function down_p(){") != false  && empty($webpage)) {
 	if(empty($pwd)) {
 		die(
-				json_encode(
-					array(
-						'code' => 400,
-						'msg' => '请输入分享密码'
-					)
-					, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-				);
+			json_encode(
+				array(
+					'code' => 400,
+					'msg' => '请输入分享密码'
+			    )
+				, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+			);
 	}
 	preg_match_all("~'sign':'(.*?)',~", $softInfo, $segment);
 	preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
 	preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
+	$post_data = array(
+		"action" => "downprocess",
+		"sign" => $segment[1][1],
+		"p" => $pwd,
+		"kd" => 1
+	);
 	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/".$ajaxm[0][0], $url);
 	$softName[1] = json_decode($softInfo,JSON_UNESCAPED_UNICODE)['inf'];
 } else {
@@ -84,7 +90,6 @@ if(strstr($softInfo, "function down_p(){") != false  && empty($webpage)) {
 		preg_match("~<iframe.*?name=\"[\s\S]*?\"\ssrc=\"\/(.*?)\"~", $softInfo, $link);
 	}
 	if(!empty($webpage)){
-	    $ifurl = "https://www.lanzouf.com/" . $link[1].$webpage;
 	    preg_match_all("~'sign':'(.*?)'~", $softInfo, $segment);
 	    preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
 	    preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
@@ -98,6 +103,7 @@ if(strstr($softInfo, "function down_p(){") != false  && empty($webpage)) {
 	    );
 	}else{
 	    $ifurl = "https://www.lanzouf.com/" . $link[1];
+	    $softInfo = MloocCurlGet($ifurl);
 	    preg_match_all("~wp_sign = '(.*?)'~", $softInfo, $segment);
 	    preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
 	    preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
