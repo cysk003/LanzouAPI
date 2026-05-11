@@ -2,10 +2,12 @@
 /**
  * @package Lanzou
  * @author Filmy,hanximeng
- * @version 1.3.103
- * @Date 2025-09-28
+ * @version 1.3.104
+ * @Date 2026-05-11
  * @link https://hanximeng.com
  */
+//屏蔽报错
+error_reporting(0);
 header('Access-Control-Allow-Origin:*');
 header('Content-Type:application/json; charset=utf-8');
 //默认UA
@@ -13,6 +15,7 @@ $UserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 $url = isset($_GET['url']) ? $_GET['url'] : "";
 $pwd = isset($_GET['pwd']) ? $_GET['pwd'] : "";
 $type = isset($_GET['type']) ? $_GET['type'] : "";
+$webpage = explode('?',$url)['1'];
 //判断传入链接参数是否为空
 if (empty($url)) {
 	die(
@@ -53,8 +56,11 @@ if(!isset($softName[1])) {
 if(!isset($softName[1])) {
 	preg_match('~div class="b"><span>(.*?)</span></div>~', $softInfo, $softName);
 }
+if(!empty($webpage)){
+    $softInfo = MloocCurlGet($url.$webpage);
+}
 //带密码的链接的处理
-if(strstr($softInfo, "function down_p(){") != false) {
+if(strstr($softInfo, "function down_p(){") != false  && empty($webpage)) {
 	if(empty($pwd)) {
 		die(
 				json_encode(
@@ -68,12 +74,6 @@ if(strstr($softInfo, "function down_p(){") != false) {
 	preg_match_all("~'sign':'(.*?)',~", $softInfo, $segment);
 	preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
 	preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
-	$post_data = array(
-		"action" => "downprocess",
-		"sign" => $segment[1][1],
-		"p" => $pwd,
-		"kd" => 1
-	);
 	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/".$ajaxm[0][0], $url);
 	$softName[1] = json_decode($softInfo,JSON_UNESCAPED_UNICODE)['inf'];
 } else {
@@ -83,20 +83,34 @@ if(strstr($softInfo, "function down_p(){") != false) {
 	if(empty($link[1])) {
 		preg_match("~<iframe.*?name=\"[\s\S]*?\"\ssrc=\"\/(.*?)\"~", $softInfo, $link);
 	}
-	$ifurl = "https://www.lanzouf.com/" . $link[1];
-	$softInfo = MloocCurlGet($ifurl);
-	preg_match_all("~wp_sign = '(.*?)'~", $softInfo, $segment);
-	preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
-	preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
-	$post_data = array(
-		"action" => "downprocess",
-		"websignkey" => $signs[1][0],
-		"signs" => $signs[1][0],
-		"sign" => $segment[1][0],
-		"websign" => '',
-		"kd" => 1,
-		"ves" => 1
-	);
+	if(!empty($webpage)){
+	    $ifurl = "https://www.lanzouf.com/" . $link[1].$webpage;
+	    preg_match_all("~'sign':'(.*?)'~", $softInfo, $segment);
+	    preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
+	    preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
+	    $post_data = array(
+		    "action" => "downprocess",
+		    "websignkey" => "Em2R",
+		    "sign" => $segment[1][1],
+		    "websign" => 2,
+		    "kd" => 1,
+		    "ves" => 1
+	    );
+	}else{
+	    $ifurl = "https://www.lanzouf.com/" . $link[1];
+	    preg_match_all("~wp_sign = '(.*?)'~", $softInfo, $segment);
+	    preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
+	    preg_match_all("/ajaxm\.php\?file=(\d+)/", $softInfo, $ajaxm);
+	    $post_data = array(
+		    "action" => "downprocess",
+		    "websignkey" => $signs[1][0],
+		    "signs" => $signs[1][0],
+		    "sign" => $segment[1][0],
+		    "websign" => '',
+		    "kd" => 1,
+		    "ves" => 1
+	    );
+	}
 	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/".$ajaxm[0][1], $ifurl);
 }
 //其他情况下的信息输出
