@@ -2,8 +2,8 @@
 /**
  * @package Lanzou
  * @author Filmy,hanximeng
- * @version 1.3.105
- * @Date 2026-05-11
+ * @version 1.3.106
+ * @Date 2026-05-22
  * @link https://hanximeng.com
  */
 //屏蔽报错
@@ -29,7 +29,8 @@ if (empty($url)) {
 }
 //一个简单的链接处理
 $url='https://www.lanzouf.com/'.explode('.com/',$url)['1'];
-$softInfo = MloocCurlGet($url);
+$cookie="";
+$softInfo = MloocCurlGet($url,$UserAgent,"acw_sc__v2=".$cookie);
 //判断文件链接是否失效
 if (strstr($softInfo, "文件取消分享了") != false) {
 	die(
@@ -89,6 +90,7 @@ if(strpos($softInfo, "function down_p(){") != false  && empty($webpage)) {
 	if(empty($link[1])) {
 		preg_match("~<iframe.*?name=\"[\s\S]*?\"\ssrc=\"\/(.*?)\"~", $softInfo, $link);
 	}
+	$ifurl = "https://www.lanzouf.com/" . $link[1];
 	if(!empty($webpage)){
 	    preg_match_all("~'sign':'(.*?)'~", $softInfo, $segment);
 	    preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
@@ -102,7 +104,6 @@ if(strpos($softInfo, "function down_p(){") != false  && empty($webpage)) {
 		    "ves" => 1
 	    );
 	}else{
-	    $ifurl = "https://www.lanzouf.com/" . $link[1];
 	    $softInfo = MloocCurlGet($ifurl);
 	    preg_match_all("~wp_sign = '(.*?)'~", $softInfo, $segment);
 	    preg_match_all("~ajaxdata = '(.*?)'~", $softInfo, $signs);
@@ -118,7 +119,7 @@ if(strpos($softInfo, "function down_p(){") != false  && empty($webpage)) {
 	    );
 	}
 	$ajaxmPath = $ajaxm[0][1] ?? $ajaxm[0][0] ?? '';
-	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/" . $ajaxmPath, $ifurl);
+	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/".$ajaxmPath, $ifurl,$UserAgent,"acw_sc__v2=".$cookie);
 }
 //其他情况下的信息输出
 $softInfo = json_decode($softInfo, true);
@@ -134,12 +135,7 @@ if ($softInfo['zt'] != 1) {
 }
 //拼接链接
 $downUrl1 = $softInfo['dom'] . '/file/' . $softInfo['url'];
-
-//cookie生成
-$softInfo=MloocCurlGet($downUrl1);
-preg_match_all("~arg1='(.*?)'~", $softInfo, $arg);
-$decrypted = acw_sc_v2_simple($arg["1"]["0"]);
-
+$softInfo=MloocCurlGet($downUrl1,$UserAgent,"acw_sc__v2=".$cookie);
 //解析最终直链地址
 $downUrl2 = MloocCurlHead($downUrl1,"https://developer.lanzoug.com",$UserAgent,"down_ip=1; expires=Sat, 16-Nov-2019 11:42:54 GMT; path=/; domain=.baidupan.com;acw_sc__v2=".$decrypted);
 //判断最终链接是否获取成功，如未成功则使用原链接
@@ -182,10 +178,11 @@ function MloocCurlGetDownUrl($url) {
 	return "";
 }
 //CURL函数
-function MloocCurlGet($url = '', $UserAgent = '') {
+function MloocCurlGet($url = '', $UserAgent = '',$cookie = '') {
 	$curl = curl_init();
 	curl_setopt($curl, CURLOPT_URL, $url);
 	curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_setopt($curl, CURLOPT_COOKIE , $cookie);
 	if ($UserAgent != "") {
 		curl_setopt($curl, CURLOPT_USERAGENT, $UserAgent);
 	}
@@ -201,9 +198,10 @@ function MloocCurlGet($url = '', $UserAgent = '') {
 	return $response;
 }
 //POST函数
-function MloocCurlPost($post_data = '', $url = '', $ifurl = '', $UserAgent = '') {
+function MloocCurlPost($post_data = '', $url = '', $ifurl = '', $UserAgent = '',$cookie = '') {
 	$curl = curl_init();
 	curl_setopt($curl, CURLOPT_URL, $url);
+	curl_setopt($curl, CURLOPT_COOKIE , $cookie);
 	curl_setopt($curl, CURLOPT_USERAGENT, $UserAgent);
 	if ($ifurl != '') {
 		curl_setopt($curl, CURLOPT_REFERER, $ifurl);
@@ -259,7 +257,7 @@ function Rand_IP() {
 	$ip1id = $arr_1[$randarr];
 	return $ip1id.".".$ip2id.".".$ip3id.".".$ip4id;
 }
-//cookie生成函数
+//cookie生成函数(现在好像又不验证了，怕忘记就先留着吧，介意的可以删除这个函数)
 function acw_sc_v2_simple($arg1) {
     $posList = [15,35,29,24,33,16,1,38,10,9,19,31,40,27,22,23,25,13,6,11,39,18,20,8,14,21,32,26,2,30,7,4,17,5,3,28,34,37,12,36];
     $mask = '3000176000856006061501533003690027800375';
