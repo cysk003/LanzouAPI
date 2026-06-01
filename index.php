@@ -2,8 +2,8 @@
 /**
  * @package Lanzou
  * @author Filmy,hanximeng
- * @version 1.3.106
- * @Date 2026-05-22
+ * @version 1.3.107
+ * @Date 2026-06-01
  * @link https://hanximeng.com
  */
 //屏蔽报错
@@ -119,7 +119,7 @@ if(strpos($softInfo, "function down_p(){") != false  && empty($webpage)) {
 	    );
 	}
 	$ajaxmPath = $ajaxm[0][1] ?? $ajaxm[0][0] ?? '';
-	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/".$ajaxmPath, $ifurl,$UserAgent,"acw_sc__v2=".$cookie);
+	$softInfo = MloocCurlPost($post_data, "https://www.lanzouf.com/".$ajaxmPath, $ifurl,"","acw_sc__v2=".$cookie);
 }
 //其他情况下的信息输出
 $softInfo = json_decode($softInfo, true);
